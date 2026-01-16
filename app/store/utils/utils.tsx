@@ -38,6 +38,7 @@ export const create = <T extends Record<string, any>, U extends T>(
           storeRef.current = globalThis.window[symbol];
         } else {
           storeRef.current = createThisStore(state as unknown as Partial<T>, store);
+          // eslint-disable-next-line react-hooks/immutability
           globalThis.window[symbol] = storeRef.current;
         }
       } else {

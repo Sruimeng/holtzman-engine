@@ -9,3 +9,8 @@ export enum CommonStorage {
   EuCookie = 't.cookieAccept',
   Comment = 't_comment',
 }
+
+export const STORAGE_KEYS = {
+  THEME: 'app_theme',
+  LOCALE: 'app_locale',
+} as const;

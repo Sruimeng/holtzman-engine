@@ -4,29 +4,31 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-plugin-prettier/recommended';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
-import { globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config([
-  globalIgnores(['dist', '.react-router/types/+routes.ts', 'public/static/video/**']),
+export default tseslint.config(
   {
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      react.configs.flat.recommended,
-      react.configs.flat['jsx-runtime'],
-      reactHooks.configs['recommended-latest'],
-      jsxA11y.flatConfigs.recommended,
-      prettier,
-      unocss,
-    ],
+    ignores: ['dist', '.react-router/**', 'public/static/video/**'],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  react.configs.flat.recommended,
+  react.configs.flat['jsx-runtime'],
+  jsxA11y.flatConfigs.recommended,
+  unocss,
+  prettier,
+  {
     files: ['**/*.{ts,tsx}'],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
     },
     rules: {
+      ...reactHooks.configs.recommended.rules,
       'react/self-closing-comp': 'error',
       'react/prop-types': 'off',
       'react-hooks/rules-of-hooks': 'error',
@@ -49,4 +51,4 @@ export default tseslint.config([
       'spaced-comment': 'error',
     },
   },
-]);
+);

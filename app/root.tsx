@@ -1,12 +1,12 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { data, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
-import { useChangeLanguage } from 'remix-i18next/react';
-import { PreventFlashOnWrongTheme, Theme, ThemeProvider, useTheme } from 'remix-themes';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
 import 'virtual:uno.css';
-import { i18nCookie, i18nServer } from './.server/i18n.server';
-import { themeSessionResolver } from './.server/theme.server';
 import { Canonical, DefaultErrorBoundary } from './components';
+import { STORAGE_KEYS } from './constants/static/storage';
 import './root.css';
+
+type Theme = 'light' | 'dark';
 
 export const links = () => {
   return [
@@ -18,18 +18,28 @@ export const links = () => {
   ];
 };
 
-export const loader = async ({ request }: any) => {
-  const { getTheme } = await themeSessionResolver(request);
-  const theme = getTheme() || Theme.DARK;
-  const locale = await i18nServer.getLocale(request);
-  const headers = new Headers();
-  headers.append('Set-Cookie', await i18nCookie.serialize(locale));
-  return data({ locale, theme }, { headers });
+const useClientTheme = () => {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEYS.THEME) as Theme | null;
+      if (stored) return stored;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'dark';
+  });
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem(STORAGE_KEYS.THEME, next);
+  };
+
+  return [theme, toggleTheme] as const;
 };
 
 const App: React.FC = () => {
   const { i18n } = useTranslation();
-  const [theme] = useTheme();
+  const [theme] = useClientTheme();
 
   return (
     <html lang={i18n.language} dir={i18n.dir(i18n.language)} data-theme={theme}>
@@ -38,7 +48,19 @@ const App: React.FC = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <Meta />
         <Links />
-        <PreventFlashOnWrongTheme ssrTheme={Boolean(theme)} />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var theme = localStorage.getItem('${STORAGE_KEYS.THEME}');
+                if (!theme) {
+                  theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', theme);
+              })();
+            `,
+          }}
+        />
         <Canonical />
       </head>
       <body className="select-none">
@@ -50,27 +72,8 @@ const App: React.FC = () => {
   );
 };
 
-const AppWithProviders = () => {
-  const { theme, locale } = useLoaderData();
-  useChangeLanguage(locale);
-
-  return (
-    <ThemeProvider specifiedTheme={theme} themeAction="/api/set-theme">
-      <App />
-    </ThemeProvider>
-  );
-};
-
 export const ErrorBoundary: React.FC = () => {
-  try {
-    return (
-      <ThemeProvider specifiedTheme={Theme.DARK} themeAction="/api/set-theme">
-        <DefaultErrorBoundary />
-      </ThemeProvider>
-    );
-  } catch {
-    return null;
-  }
+  return <DefaultErrorBoundary />;
 };
 
-export default AppWithProviders;
+export default App;
