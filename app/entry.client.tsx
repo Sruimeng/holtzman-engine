@@ -3,7 +3,7 @@ import i18next from '@/locales/lib/i18next';
 import { I18nextProvider, initReactI18next } from '@/locales/lib/react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { startTransition, StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { hydrateRoot } from 'react-dom/client';
 import { HydratedRouter } from 'react-router/dom';
 import { STORAGE_KEYS } from './constants/static/storage';
 
@@ -22,7 +22,8 @@ async function main() {
     });
 
   startTransition(() => {
-    createRoot(document).render(
+    hydrateRoot(
+      document,
       <I18nextProvider i18n={i18next}>
         <StrictMode>
           <HydratedRouter />
