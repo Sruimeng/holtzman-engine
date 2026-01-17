@@ -1,0 +1,43 @@
+{
+  "sidebar": {
+    "sessions": "会话",
+    "noSessions": "暂无会话",
+    "newSession": "新建会话"
+  },
+  "topNav": {
+    "boardroom": "指挥室",
+    "agents": "智能体",
+    "settings": "设置"
+  },
+  "console": {
+    "placeholder": "输入消息...",
+    "send": "发送",
+    "stop": "停止",
+    "clear": "清空"
+  },
+  "godMode": {
+    "title": "上帝模式",
+    "model": "模型",
+    "temperature": "温度",
+    "maxTokens": "最大令牌",
+    "systemPrompt": "系统提示词",
+    "rationality": "理性度",
+    "creativity": "创造力"
+  },
+  "agents": {
+    "critic": "批评家",
+    "pragmatist": "实用主义者",
+    "historian": "历史学家",
+    "expander": "扩展者",
+    "idle": "待机",
+    "thinking": "思考中...",
+    "speaking": "发言中..."
+  },
+  "settings": {
+    "theme": "主题",
+    "language": "语言",
+    "dark": "深色",
+    "light": "浅色",
+    "selectLanguage": "选择语言"
+  }
+}

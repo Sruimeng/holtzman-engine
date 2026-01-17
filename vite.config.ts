@@ -10,14 +10,22 @@ export default defineConfig(() => ({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // 大型工具库单独打包
+          if (id.includes('three') || id.includes('@react-three')) {
+            return 'vendor-three';
+          }
+          if (id.includes('framer-motion')) {
+            return 'vendor-motion';
+          }
           if (id.includes('lodash-es') || id.includes('dayjs')) {
             return 'vendor-utils';
+          }
+          if (id.includes('dexie')) {
+            return 'vendor-dexie';
           }
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 800,
   },
   server: {
     host: 'localhost',

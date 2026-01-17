@@ -1,0 +1,43 @@
+{
+  "sidebar": {
+    "sessions": "Sessions",
+    "noSessions": "No sessions",
+    "newSession": "New Session"
+  },
+  "topNav": {
+    "boardroom": "Boardroom",
+    "agents": "Agents",
+    "settings": "Settings"
+  },
+  "console": {
+    "placeholder": "Enter your message...",
+    "send": "Send",
+    "stop": "Stop",
+    "clear": "Clear"
+  },
+  "godMode": {
+    "title": "God Mode",
+    "model": "Model",
+    "temperature": "Temperature",
+    "maxTokens": "Max Tokens",
+    "systemPrompt": "System Prompt",
+    "rationality": "Rationality",
+    "creativity": "Creativity"
+  },
+  "agents": {
+    "critic": "Critic",
+    "pragmatist": "Pragmatist",
+    "historian": "Historian",
+    "expander": "Expander",
+    "idle": "Idle",
+    "thinking": "Thinking...",
+    "speaking": "Speaking..."
+  },
+  "settings": {
+    "theme": "Theme",
+    "language": "Language",
+    "dark": "Dark",
+    "light": "Light",
+    "selectLanguage": "Select Language"
+  }
+}

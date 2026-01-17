@@ -1,4 +1,7 @@
-/* 主题颜色变量 */
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Theme Variables */
 :root {
   --color-background: 255 255 255;
   --color-foreground: 15 23 42;
@@ -7,6 +10,13 @@
   --color-accent: 139 92 246;
   --color-muted: 148 163 184;
   --color-border: 226 232 240;
+
+  /* Boardroom Colors */
+  --color-void: #050505;
+  --color-deep-slate: #0F172A;
+  --color-electric: #38BDF8;
+  --color-holo: #F8FAFC;
+  --color-dim: #94A3B8;
 
   --safe-area-inset-top: env(safe-area-inset-top);
   --safe-area-inset-right: env(safe-area-inset-right);
@@ -24,6 +34,23 @@
   --color-border: 51 65 85;
 }
 
+[data-theme='light'] {
+  --color-background: 248 250 252;
+  --color-foreground: 15 23 42;
+  --color-primary: 59 130 246;
+  --color-secondary: 100 116 139;
+  --color-accent: 139 92 246;
+  --color-muted: 148 163 184;
+  --color-border: 226 232 240;
+
+  --color-void: #F8FAFC;
+  --color-deep-slate: #F1F5F9;
+  --color-electric: #0284C7;
+  --color-holo: #0F172A;
+  --color-dim: #64748B;
+  --color-glass: rgba(255, 255, 255, 0.6);
+}
+
 /* 2K分辨率及以上 */
 @media (width >= 2560px) {
   html {
@@ -38,14 +65,98 @@
   }
 }
 
-/* 移动端适配 */
+/* Mobile */
 @media (width <= 768px) {
   html {
     font-size: max(calc(100vw / 768 * 16), 16px);
   }
 
-  /* 确保页面内容不被安全区域遮挡 */
   body {
     padding: var(--safe-area-inset-top) 0 var(--safe-area-inset-bottom) 0;
   }
+}
+
+/* Boardroom Glass Utilities */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  box-shadow:
+    0 0 15px rgba(56, 189, 248, 0.1),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='light'] .glass-panel {
+  background: var(--color-glass);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.glass-panel-glow {
+  box-shadow:
+    0 0 20px rgba(56, 189, 248, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.glass-active {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* HUD Typography */
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+.font-content {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+/* HUD Colors */
+.bg-void { background-color: var(--color-void); }
+.text-electric { color: var(--color-electric); }
+.text-holo { color: var(--color-holo); }
+.text-dim { color: var(--color-dim); }
+.border-electric\/50 { border-color: rgba(56, 189, 248, 0.5); }
+.border-white\/8 { border-color: rgba(255, 255, 255, 0.08); }
+
+/* HUD Glow Effects */
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+.shadow-glow-line {
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+/* HUD Buttons */
+.hud-btn {
+  background: transparent;
+  border: 1px solid var(--color-electric);
+  color: var(--color-electric);
+  transition: all 0.2s;
+}
+
+.hud-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.1);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+.hud-icon-btn {
+  background: transparent;
+  border: none;
+  color: rgb(148 163 184 / 60%);
+  transition: all 0.3s ease;
+}
+
+.hud-icon-btn:hover {
+  background: transparent;
+  color: var(--color-electric);
+  filter: drop-shadow(0 0 8px rgb(56 189 248 / 60%));
 }

@@ -1,9 +1,11 @@
+import en_boardroom from './en/boardroom.json';
 import en_common from './en/common.json';
 import es_common from './es/common.json';
 import ja_common from './ja/common.json';
 import ko_common from './ko/common.json';
 import pt_common from './pt/common.json';
 import ru_common from './ru/common.json';
+import zh_boardroom from './zh/boardroom.json';
 import zh_common from './zh/common.json';
 
 export const Lngs = [
@@ -25,9 +27,11 @@ export const I18nConfig = {
 export const resources = {
   en: {
     common: en_common,
+    boardroom: en_boardroom,
   },
   zh: {
     common: zh_common,
+    boardroom: zh_boardroom,
   },
   ja: {
     common: ja_common,
