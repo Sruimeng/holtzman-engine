@@ -32,6 +32,7 @@
     "pruned": "pnpm --filter=. --prod deploy pruned"
   },
   "dependencies": {
+    "@ant-design/x-markdown": "^2.1.3",
     "@react-router/fs-routes": "^7.6.2",
     "cookie": "^1.0.2",
     "dayjs": "^1.11.13",
@@ -46,12 +47,14 @@
     "react-i18next": "^16.5.1",
     "react-router": "^7.6.2",
     "remix-utils": "^9.0.0",
+    "shiki": "^3.21.0",
     "zod": "^4.3.5",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
     "@iconify-json/carbon": "^1.2.18",
+    "@iconify/react": "^6.0.2",
     "@react-router/dev": "^7.6.2",
     "@types/eslint__js": "^8.42.3",
     "@types/lodash-es": "^4.17.12",

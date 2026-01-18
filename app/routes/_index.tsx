@@ -1,137 +1,179 @@
-import { useTranslation } from 'react-i18next';
+import { CommandConsole, HoloCard, Sidebar, StatusHud, ViewportLayers } from '@/components/nexus';
+import { EngineEndpoint } from '@/constants/meta/service';
+import { useFetchSSE } from '@/hooks/use-fetch-sse';
+import { selectSynthesizerContent, useOrchestrationStore } from '@/store/orchestration';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-const features = [
-  {
-    icon: 'i-carbon-lightning',
-    title: 'React Router v7',
-    desc: 'File-based routing with SPA mode',
-  },
-  {
-    icon: 'i-carbon-paint-brush',
-    title: 'UnoCSS',
-    desc: 'Atomic CSS with instant HMR',
-  },
-  {
-    icon: 'i-carbon-translate',
-    title: 'i18n Ready',
-    desc: '7 languages out of the box',
-  },
-  {
-    icon: 'i-carbon-moon',
-    title: 'Dark Mode',
-    desc: 'System preference + manual toggle',
-  },
-  {
-    icon: 'i-carbon-code',
-    title: 'TypeScript',
-    desc: 'Strict type checking enabled',
-  },
-  {
-    icon: 'i-carbon-cube',
-    title: 'Zustand',
-    desc: 'Lightweight state management',
-  },
+// Mock session data for sidebar
+const MOCK_SESSIONS = [
+  { id: '1', active: true },
+  { id: '2', active: false },
+  { id: '3', active: false },
+  { id: '4', active: false },
+  { id: '5', active: false },
+  { id: '6', active: false },
+  { id: '7', active: false },
 ];
 
-const techStack = [
-  { name: 'React 19', url: 'https://react.dev' },
-  { name: 'React Router v7', url: 'https://reactrouter.com' },
-  { name: 'Vite 7', url: 'https://vite.dev' },
-  { name: 'UnoCSS', url: 'https://unocss.dev' },
-  { name: 'TypeScript', url: 'https://typescriptlang.org' },
-  { name: 'Zustand', url: 'https://zustand.docs.pmnd.rs' },
-];
+const GRID_CLASS: Record<number, string> = {
+  1: 'grid-cols-1 max-w-xl mx-auto',
+  2: 'grid-cols-2 max-w-4xl mx-auto',
+  3: 'grid-cols-3 max-w-6xl mx-auto',
+  4: 'grid-cols-2 max-w-4xl mx-auto',
+};
 
-export default function Index() {
-  const { t } = useTranslation('common');
+const getGridClass = (count: number) => GRID_CLASS[count] || 'grid-cols-3 max-w-6xl mx-auto';
+
+function EmptyState() {
+  return (
+    <div className="relative z-10 min-h-[60vh] flex flex-col items-center justify-center text-center">
+      <div className="mb-6 text-6xl opacity-20">
+        <span className="i-carbon-ai-status inline-block" />
+      </div>
+      <h1 className="mb-2 text-2xl text-text-primary font-bold">Nexus Boardroom</h1>
+      <p className="max-w-md text-text-secondary">
+        Enter a query below to summon the council. Multiple AI agents will analyze your question
+        from different perspectives.
+      </p>
+    </div>
+  );
+}
+
+export default function IndexRoute() {
+  const [query, setQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState<string | null>(null);
+  const prevStatusRef = useRef<string | null>(null);
+
+  const {
+    status,
+    agents,
+    history,
+    handleSSEEvent,
+    startOrchestration,
+    addToHistory,
+    reset,
+    error,
+  } = useOrchestrationStore();
+
+  const synthesizerContent = useOrchestrationStore(selectSynthesizerContent);
+
+  // Add synthesizer content to history when orchestration finishes
+  useEffect(() => {
+    const wasStreaming = prevStatusRef.current === 'streaming';
+    const allDone = Object.values(agents).every((a) => a.status === 'done' || a.status === 'error');
+
+    if (wasStreaming && allDone && synthesizerContent) {
+      addToHistory({ role: 'assistant', content: synthesizerContent });
+    }
+
+    prevStatusRef.current = status;
+  }, [status, agents, synthesizerContent, addToHistory]);
+
+  const requestBody = useMemo(
+    () => (activeQuery ? { mode: 'polymath', query: activeQuery, config: {}, history } : null),
+    [activeQuery, history],
+  );
+
+  const onMessage = useCallback((event: any) => handleSSEEvent(event), [handleSSEEvent]);
+  const onError = useCallback(
+    (err: Error) => handleSSEEvent({ event: 'error', data: { error: err.message } }),
+    [handleSSEEvent],
+  );
+
+  useFetchSSE({
+    url: EngineEndpoint,
+    body: requestBody,
+    onMessage,
+    onError,
+    enabled: !!activeQuery && status !== 'finished' && status !== 'error',
+  });
+
+  const handleStart = () => {
+    if (!query.trim()) return;
+    reset();
+    startOrchestration(query);
+    setActiveQuery(query);
+    setQuery('');
+  };
+
+  const handleStop = () => {
+    setActiveQuery(null);
+    reset();
+  };
+
+  const agentList = useMemo(() => Object.values(agents), [agents]);
+
+  const { normal, synthesizer } = useMemo(() => {
+    const synth = agentList.find((a) => a.role === 'synthesizer');
+    const rest = agentList.filter((a) => a.role !== 'synthesizer');
+    return { normal: rest, synthesizer: synth };
+  }, [agentList]);
+
+  const isRunning = status === 'orchestrating' || status === 'streaming';
+  const isThinking = status === 'orchestrating';
+  const gridCount = normal.length || 1;
+
+  const handleSubmit = () => {
+    if (isRunning) {
+      handleStop();
+    } else {
+      handleStart();
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Hero */}
-      <section className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
-        <div className="mb-6 inline-flex items-center gap-2 border border-border rounded-full bg-background px-4 py-2 text-sm text-muted">
-          <span className="i-carbon-rocket inline-block h-4 w-4" />
-          {t('hero.badge', 'Production Ready Template')}
-        </div>
+    <ViewportLayers>
+      <StatusHud title="Nexus Boardroom" sessionId="#020617" />
+      <Sidebar
+        sessions={MOCK_SESSIONS}
+        onSessionClick={(id) => console.log('Session clicked:', id)}
+        onSettingsClick={() => console.log('Settings clicked')}
+      />
 
-        <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-6xl">
-          <span className="text-primary">Holtzman</span> Engine
-        </h1>
+      {/* Central Energy Orb Background - Quantum Sphere Effect */}
+      <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
+        {/* Outer glow ring */}
+        <div className="absolute h-[700px] w-[700px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.15)_0%,rgba(6,182,212,0.1)_40%,transparent_70%)]" />
+        {/* Middle energy layer */}
+        <div className="absolute h-[500px] w-[500px] animate-pulse rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.3)_0%,rgba(34,211,238,0.2)_30%,transparent_60%)] blur-xl" />
+        {/* Inner core */}
+        <div className="absolute h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle,rgba(192,132,252,0.5)_0%,rgba(103,232,249,0.3)_40%,transparent_70%)] blur-lg" />
+        {/* Bright center */}
+        <div className="absolute h-[150px] w-[150px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.4)_0%,rgba(167,139,250,0.3)_50%,transparent_80%)] blur-md" />
+      </div>
 
-        <p className="mb-8 max-w-xl text-lg text-muted">
-          {t(
-            'hero.desc',
-            'A modern React SPA template with everything you need to build fast, scalable applications.',
-          )}
-        </p>
-
-        <div className="flex flex-wrap justify-center gap-4">
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-white font-medium transition-opacity hover:opacity-90"
-          >
-            <span className="i-carbon-logo-github h-5 w-5" />
-            GitHub
-          </a>
-          <a
-            href="#features"
-            className="inline-flex items-center gap-2 border border-border rounded-lg px-6 py-3 font-medium transition-colors hover:bg-foreground/5"
-          >
-            {t('hero.explore', 'Explore Features')}
-            <span className="i-carbon-arrow-down h-4 w-4" />
-          </a>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="border-t border-border px-4 py-20">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="mb-12 text-center text-3xl font-bold">
-            {t('features.title', 'Features')}
-          </h2>
-
-          <div className="grid gap-6 lg:grid-cols-3 sm:grid-cols-2">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="border border-border rounded-xl p-6 transition-colors hover:border-primary/50"
-              >
-                <span className={`${f.icon} mb-4 block h-8 w-8 text-primary`} />
-                <h3 className="mb-2 text-lg font-semibold">{f.title}</h3>
-                <p className="text-sm text-muted">{f.desc}</p>
-              </div>
-            ))}
+      <main className="ml-20 min-h-screen px-6 pb-32 pt-16">
+        {error && (
+          <div className="mb-6 border border-red-500/30 rounded-lg bg-red-900/20 p-4 text-red-300 backdrop-blur">
+            <span className="text-sm font-mono">Error: {error}</span>
           </div>
-        </div>
-      </section>
+        )}
 
-      {/* Tech Stack */}
-      <section className="border-t border-border px-4 py-20">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="mb-12 text-center text-3xl font-bold">{t('stack.title', 'Tech Stack')}</h2>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            {techStack.map((tech) => (
-              <a
-                key={tech.name}
-                href={tech.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="border border-border rounded-lg px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary"
-              >
-                {tech.name}
-              </a>
-            ))}
+        {agentList.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="relative z-10 mx-auto max-w-6xl py-8">
+            <div className={`grid gap-6 ${getGridClass(gridCount)}`}>
+              {normal.map((agent) => (
+                <HoloCard key={agent.id} agent={agent} />
+              ))}
+              {synthesizer && (
+                <div className="col-span-full flex justify-center">
+                  <HoloCard agent={synthesizer} wide />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        )}
+      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border px-4 py-8 text-center text-sm text-muted">
-        <p>Built with Holtzman Engine Template</p>
-      </footer>
-    </div>
+      <CommandConsole
+        value={query}
+        onChange={setQuery}
+        onSubmit={handleSubmit}
+        disabled={false}
+        isThinking={isThinking}
+      />
+    </ViewportLayers>
   );
 }

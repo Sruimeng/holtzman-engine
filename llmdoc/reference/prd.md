@@ -1,147 +1,185 @@
-# Project Nexus: Frontend PRD (Phase 1-3)
+# Frontend PRD: Nexus Boardroom (Holographic Edition)
 
-## 总体架构策略
+**版本**: 2.0
+**类型**: 实施规范
+**核心目标**: 1:1 还原 Figma 设计稿的“全息玻璃”质感，并对接 Polymath SSE 引擎。
 
-前端不再是简单的“消息列表”，而是一个 **“反应式容器” (Reactive Container)**。它通过 SSE 监听后端信号，动态生成 UI 组件。
+## 1. 视觉架构 (Visual Architecture)
 
-* **Source of Truth**: 后端 Director (通过 `event: meta` 下发指令)。
-* **Data Flow**: 单向数据流 (Server -> Client)。
-* **State Management**: 使用 Map 结构存储 `Record<AgentId, Content>`，支持并发写入。
+基于参考图，界面由 **5 个 Z 轴层级** 构成，通过 CSS 制造伪 3D 深度。
+
+* **L0 (Deep Void)**: 背景视频层。播放紫色/青色能量核心循环视频 (`core_loop.mp4`)。混合模式: `Screen`，透明度: `40%`。
+* **L1 (The Grid)**: 全屏深蓝色网格背景 (`bg-grid-slate-900`)，带晕映 (Vignette) 遮罩。
+* **L2 (Glass Panel)**: 侧边栏与顶部 HUD。磨砂玻璃材质。
+* **L3 (Holo-Cards)**: 智能体卡片。高亮边缘，内发光，悬浮态。
+* **L4 (Overlay)**: 扫描线与噪点纹理，统一画面质感。
+
+## 2. 组件详细规范 (Component Specs)
+
+### 2.1 侧边栏 (Sidebar) - *Left*
+
+* **样式**: 磨砂玻璃长条，高度 100vh，宽度 80px。
+* **元素**:
+* **User Avatar**: 顶部。带青色呼吸光环 (`shadow-cyan-500/50`)。
+* **Session List**: 中部。垂直排列的小圆点。
+* *Active*: 青色发光圆点 + 连线效果。
+* *Inactive*: 灰色圆点。
+
+
+* **Settings**: 底部齿轮图标。
+
+
+
+### 2.2 顶部 HUD (Status Bar) - *Top*
+
+* **样式**: 悬浮胶囊或通栏，极低透明度。
+* **数据**:
+* **Time**: `HH:mm` (实时更新)。
+* **Signal**: `((·)) 15%` (模拟信号强度)。
+* **Hash**: `#020617` (版本号或 Session ID)。
+* **Title**: "Nexus Boardroom" (居中，发光字)。
+
+
+
+### 2.3 核心舞台 (The Stage) - *Center*
+
+* **布局**: 动态 Grid 系统。根据 API `meta` 事件返回的 Agent 数量自动排列。
+* **默认视图 (参考图)**: 双卡片对决模式 (Duel Mode)。
+* 左卡: `PRAGMATIST` (Green Theme)
+* 右卡: `CRITIC` (Red Theme)
+
+
+
+### 2.4 全息卡片 (Holo-Card) - *Critical*
+
+参考图中卡片的详细构造：
+
+* **Header**:
+* Icon + Agent Name (全大写，等宽字体)。
+* 顶部高亮光条 (颜色对应 Agent 主题)。
+
+
+* **Body**:
+* 背景: 深色半透明 (`bg-slate-900/60`) + `backdrop-blur-xl`.
+* 内容: Markdown 渲染区域。字体 `Inter`，颜色 `Slate-200`。
+
+
+* **Footer**:
+* 状态: "Thinking..." 或 "Speaking..." (打字机效果时闪烁)。
+* 数据: "Latency data, 0.83ms" (模拟数据)。
+
+
+
+### 2.5 底部控制台 (Command Console) - *Bottom*
+
+* **Visualizer (波形图)**:
+* 位于输入框上方。
+* 参考图显示为 **垂直条状频谱**，颜色为青紫渐变。
+* *Idle*: 低幅波动。 *Thinking*: 高频剧烈波动。
+
+
+* **Input Field**:
+* 玻璃胶囊造型。
+* Placeholder: "Enter tactical query..."
+* 发光边框: 聚焦时显示青色外发光。
+
+
 
 ---
 
-## 📋 Phase 1: 核心引擎与数据管道 (The Engine Core)
+## 3. 逻辑与数据接入 (Logic & Integration)
 
-**目标**: 跑通 `POST /api/v1/engine` 接口，实现“导演编排”和“多路并发流”的底层逻辑。此时不追求 UI 美观，只追求数据正确上屏。
+### 3.1 智能体映射表 (Agent Mapping)
 
-### 1. 功能需求 (Functional Requirements)
+前端需维护一个配置表，将后端 `agent_id` 映射到 UI 颜色和图标。
 
-#### 1.1 SSE 连接管理器 (Connection Manager)
-
-* **建立连接**: 用户提交 Query 后，通过 `@microsoft/fetch-event-source` 发起 POST 请求。
-* **生命周期管理**: 处理 `onopen`, `onmessage`, `onclose`, `onerror`。
-* **Paylaod 组装**: 构造符合 `PolymathRequest` 接口的 JSON Body (包含 `mode: 'polymath'` 和 `query`)。
-
-#### 1.2 导演编排系统 (The Director Logic)
-
-* **监听 `event: meta**`:
-* 这是最重要的信号。前端收到此事件后，必须立即清空/重置当前的 Agent 列表。
-* 根据 `selected_agents` 数组（例如 `['historian', 'critic']`），在内存中初始化对应的数据结构。
-* **UI 响应**: 界面上从“空状态”瞬间切换为“N 个占位卡片”。
-
-
-
-#### 1.3 并发流式写入 (Concurrent Streaming)
-
-* **监听 `event: stream**`:
-* 解析 `data.agent` (目标 ID) 和 `data.delta` (增量文本)。
-* **无锁写入**: 根据 ID 定位到对应的 State 对象，追加文本。必须支持多个 Agent 在同一毫秒内更新（例如 Critic 和 Historian 同时在说话）。
-
-
-* **监听 `event: stream_end**`:
-* 将对应 Agent 的状态从 `streaming` 标记为 `done`。
-
-
-
-### 2. 数据结构定义 (TypeScript)
-
-```typescript
-// 核心状态 Store (Zustand 推荐)
-interface PolymathStore {
-  stage: 'idle' | 'orchestrating' | 'streaming' | 'finished';
-  agents: Record<string, {
-    id: string;      // e.g., 'critic'
-    name: string;    // e.g., '批判者'
-    content: string; // Markdown 文本
-    isDone: boolean; // 是否收到 stream_end
-  }>;
-  actions: {
-    initAgents: (ids: string[]) => void;
-    appendContent: (id: string, delta: string) => void;
-    markDone: (id: string) => void;
-  }
-}
-
-```
-
----
-
-## 🎨 Phase 2: 智能体角色与动态舞台 (Agent Persona & Stage)
-
-**目标**: 将 Phase 1 的纯文本数据转化为 **2D 全息卡片 (Holo-Cards)**，实现不同 Agent 的视觉区分和动态布局。
-
-### 1. 视觉规范 (Visual Specs)
-
-#### 1.1 动态网格布局 (Dynamic Grid)
-
-根据 `event: meta` 返回的 `selected_agents` 数量，动态计算 CSS Grid：
-
-* **1 Agent**: 居中宽卡片 (max-width: 600px)。
-* **2 Agents**: 左右分栏 (Split View)，如之前的设计图。
-* **3 Agents**: "品"字形布局或三列布局。
-* **4+ Agents**: 2x2 网格。
-
-#### 1.2 角色主题映射 (Persona Mapping)
-
-根据后端提供的 Agent ID 列表，前端需硬编码一套视觉主题配置：
-
-| Agent ID | 显示名称 | 主题色 (Tailwind) | 图标 (Lucide) | 边框风格 |
+| Agent ID | Name | Color Theme (Tailwind) | Icon (Lucide) | 参考图对应 |
 | --- | --- | --- | --- | --- |
-| `critic` | 批判者 | `rose-500` | `AlertTriangle` | 红色脉冲边框 |
-| `historian` | 历史学家 | `amber-500` | `ScrollText` | 琥珀色复古光晕 |
-| `pragmatist` | 实干家 | `emerald-500` | `Briefcase` | 绿色稳重实线 |
-| `expander` | 拓展者 | `purple-500` | `Sparkles` | 紫色扩散光效 |
-| `verifier` | 验证者 | `blue-500` | `ShieldCheck` | 蓝色盾牌扫描 |
-| `mediator` | 调停者 | `slate-400` | `Scale` (天平) | 灰色平衡线 |
+| `pragmatist` | PRAGMATIST | `emerald-500` (#10B981) | `Briefcase` | 左侧卡片 |
+| `critic` | CRITIC | `rose-500` (#F43F5E) | `AlertTriangle` | 右侧卡片 |
+| `historian` | HISTORIAN | `amber-500` (#F59E0B) | `ScrollText` | (预设) |
+| `expander` | EXPANDER | `purple-500` (#A855F7) | `Sparkles` | (预设) |
+| `default` | SYSTEM | `cyan-500` (#06B6D4) | `Cpu` | (通用) |
 
-#### 1.3 卡片状态机 UI
+### 3.2 SSE 事件流处理机
 
-* **Thinking (等待流)**: 卡片已生成，内容为空。显示 "Connecting Quantum Core..." 的骨架屏动画。
-* **Streaming (输出中)**: 文字打字机效果。卡片边缘呼吸发光。
-* **Done (完成)**: 光效收敛，显示 Token 统计或引用来源。
-* **Error (故障)**: 监听 `event: error`。卡片变红，显示故障代码效果 (Glitch Effect)。
+对接 `POST /api/v1/engine`。
 
-### 2. 交互细节
+1. **Phase 1: 初始化 (Request)**
+* 发送 `query`。
+* UI 状态: Input 锁定，Visualizer 变为“高频波动”，中间舞台显示 "Orchestrating Agents..."。
 
-* **自动滚动**: 每个卡片独立滚动，但当有新内容生成时，自动吸底 (Auto-scroll to bottom)。
-* **Markdown 渲染**: 必须支持基础 Markdown (加粗、列表) 的实时渲染，防止流式输出时的格式抖动。
 
----
+2. **Phase 2: 编排 (Event: `meta`)**
+* **Payload**: `{"selected_agents": ["pragmatist", "critic"]}`
+* **Action**:
+* 清空当前舞台。
+* 根据列表生成 2 张卡片。
+* 卡片状态设为 `Thinking` (显示骨架屏或 Loading 动画)。
 
-## ⚙️ Phase 3: 外围控制与持久化 (Peripherals & Control)
 
-**目标**: 完善 `history` 上下文支持，增加配置能力，提升产品的完整性。
 
-### 1. 功能需求
 
-#### 1.1 历史上下文注入 (Context Injection)
+3. **Phase 3: 流式输出 (Event: `stream`)**
+* **Payload**: `{"agent": "critic", "delta": "This proposal..."}`
+* **Action**:
+* 找到 ID 为 `critic` 的卡片。
+* 将 `delta` 追加到内容缓存。
+* 触发“打字机”光标跳动。
+* 卡片边框高亮，透明度设为 100% (Focus)。非活跃卡片透明度降为 60%。
 
-* **逻辑**: 后端接口要求 `history` 字段。
-* **实现**: 前端需要维护一个 `SessionHistory` 数组。
-* **流程**: 每次发起请求时，将当前会话之前的问答对（User Query + Assistant Final Summary）打包放入 `body.history`。
 
-#### 1.2 配置面板 (Config Panel)
 
-* **对应字段**: `config.model`。
-* **UI**: 在 Input 框右侧增加 "God Mode" 设置按钮。
-* **选项**: 下拉菜单选择底层模型 (e.g., "Speed (Flash)" vs "Intelligence (Pro)")。
 
-#### 1.3 错误恢复机制 (Resilience)
+4. **Phase 4: 完成 (Event: `stream_end`)**
+* **Action**: 移除打字机光标，显示引用来源或 Token 统计。
 
-* **网络中断**: SSE 连接意外断开时，前端应保留已接收的内容，并在卡片底部显示 "Connection Lost. Retry?" 按钮。
-* **Agent 单点故障**: 如果收到 `event: error` (例如 Critic 挂了)，不要让整个页面崩溃。只将 Critic 卡片置灰并显示错误信息，其他 Agent 继续运行。
 
-#### 1.4 综合者视图 (The Synthesizer)
-
-* **特殊逻辑**: 如果 `selected_agents` 中包含 `synthesizer`，通常它是最后一个出场的。
-* **UI 处理**: 将 `synthesizer` 的卡片设计为 **全宽 (Full Width)**，置于所有其他卡片下方，作为最终的“会议总结报告”。
 
 ---
 
-### 开发优先级建议
+## 4. 交互动效 (Interaction)
 
-1. **P0**: 实现 **SSE Client** 和 **Zustand Store**，确保能收到 `meta` 和 `stream` 事件并在控制台打印正确。
-2. **P0**: 实现基础的 **HoloCard** 组件，不带颜色区分，只显示文本。
-3. **P1**: 实现 **Director 动态布局**，根据 `meta` 事件生成对应数量的卡片。
-4. **P1**: 引入 **Persona 主题系统**，给不同 ID 上色。
-5. **P2**: 接入 **History** 和 **Config** 参数。
+使用 `Framer Motion` 实现。
+
+1. **入场 (Entry)**:
+* Grid 背景淡入。
+* 卡片从屏幕下方 `50px` 处弹入 (Spring 动画)。
+
+
+2. **视差 (Parallax)**:
+* 鼠标移动时，背景层 (L0, L1) 移动速度极慢，卡片层 (L3) 移动稍快。制造“悬浮”错觉。
+
+
+3. **悬停 (Hover)**:
+* 鼠标悬停在卡片上时，卡片轻微上浮，内发光增强。
+
+
+
+---
+
+## 5. 给 AI 编程助手的 Prompt (Developer Hand-off)
+
+> **Role**: Senior Frontend Engineer.
+> **Task**: Implement the "Nexus Boardroom" UI based on the attached screenshot and API specs.
+> **Stack**: React, Tailwind CSS, Framer Motion, Lucide React.
+> **Requirements**:
+> 1. **Layout**: Create the Sidebar (Left), Header (Top), and Stage (Center). Use CSS Grid/Flexbox.
+> 2. **Visuals**: Use `backdrop-filter: blur(xl)` for the glass effect. Match the specific colors: Green for Pragmatist, Red for Critic.
+> 3. **State**: Create a `usePolymathStore` (Zustand) to handle SSE events.
+> * On `meta` event: dynamic render `<HoloCard />` components.
+> * On `stream` event: append text to the specific card ID.
+> 
+> 
+> 4. **Components**:
+> * `HoloCard`: Needs props for `title`, `type` (determines color), `content`, and `status`.
+> * `AudioVisualizer`: A mock animated bars component above the input.
+> 
+> 
+> 5. **Assets**: Use a placeholder `div` with a radial gradient to simulate the background "Energy Core" if video is missing.
+> 
+> 
+
+---
+
+**附注**: 所有的颜色 Hex 值已从你的设计稿中提取，请在 Tailwind Config 中通过 `extend.colors` 预设这些变量，以保证还原度。
