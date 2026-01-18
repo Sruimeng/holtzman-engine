@@ -16,15 +16,21 @@ export function useSSEStream({ url, autoConnect = false }: UseSSEStreamConfig) {
 
   const { sendMessage, appendChunk, finishStream } = useChatStore();
 
+  const appendChunkRef = useRef(appendChunk);
+  const finishStreamRef = useRef(finishStream);
+
+  appendChunkRef.current = appendChunk;
+  finishStreamRef.current = finishStream;
+
   useEffect(() => {
     multiplexerRef.current = new Multiplexer({
       onChunk: ({ agentId, content }) => {
         if (!turnIdRef.current) return;
-        appendChunk(agentId, turnIdRef.current, content);
+        appendChunkRef.current(agentId, turnIdRef.current, content);
       },
       onComplete: (agentId) => {
         if (!turnIdRef.current) return;
-        finishStream(agentId, turnIdRef.current);
+        finishStreamRef.current(agentId, turnIdRef.current);
       },
     });
 
@@ -57,7 +63,7 @@ export function useSSEStream({ url, autoConnect = false }: UseSSEStreamConfig) {
       clientRef.current?.disconnect();
       multiplexerRef.current?.clear();
     };
-  }, [url, autoConnect, appendChunk, finishStream]);
+  }, [url, autoConnect]);
 
   const connect = useCallback(() => {
     clientRef.current?.connect();

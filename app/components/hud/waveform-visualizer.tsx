@@ -42,8 +42,10 @@ export function WaveformVisualizer({ isActive = false, height = 40, samples = 64
       const rect = canvas.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
+      const dpr = window.devicePixelRatio || 1;
       const centerY = h / 2;
 
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
       const targetAmp = isActive ? 15 : 5;

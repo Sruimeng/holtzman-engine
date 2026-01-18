@@ -160,3 +160,26 @@
   color: var(--color-electric);
   filter: drop-shadow(0 0 8px rgb(56 189 248 / 60%));
 }
+
+/* 2D Holtzman Scene Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* Scene Colors */
+.bg-void { background-color: var(--color-void); }
+.bg-deep-slate { background-color: var(--color-deep-slate); }
+.from-deep-slate { --un-gradient-from: var(--color-deep-slate); }
+.to-void { --un-gradient-to: var(--color-void); }
+
+/* Radial Gradient Utility */
+.bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
+}

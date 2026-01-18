@@ -74,18 +74,19 @@ const chatStore = create<ChatState, ChatStore>('chat-store', (initial) => (set, 
         role: 'assistant',
         timestamp: Date.now(),
       };
+      const nextStreaming = new Set(streamingAgents);
+      nextStreaming.add(agentId);
       set({
         messages: [...messages, newMessage],
-        streamingAgents: new Set([...streamingAgents, agentId]),
+        streamingAgents: nextStreaming,
       });
     }
   },
 
   finishStream: (agentId: AgentId, _turnId: TurnId) => {
-    const { streamingAgents } = get();
-    const next = new Set(streamingAgents);
-    next.delete(agentId);
-    set({ streamingAgents: next });
+    const nextStreaming = new Set(get().streamingAgents);
+    nextStreaming.delete(agentId);
+    set({ streamingAgents: nextStreaming });
   },
 
   clearMessages: () => {

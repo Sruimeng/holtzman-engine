@@ -104,18 +104,17 @@ export function TopNav({
 }: Props) {
   return (
     <header className="fixed left-16 right-0 top-0 z-40 flex flex-col">
-      <div className="relative flex h-16 items-center gap-6 bg-gradient-to-br from-slate-950 via-slate-900/95 to-slate-950 px-6 backdrop-blur-xl border-b border-slate-800/50">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-blue-900/20 via-indigo-900/30 to-blue-900/20" />
-        <div className="pointer-events-none absolute left-1/4 top-1/2 h-[300px] w-[600px] -translate-x-1/2 -translate-y-1/2 bg-cyan-500/8 blur-[120px]" />
-        <div className="pointer-events-none absolute right-1/4 top-1/2 h-[200px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-blue-500/6 blur-[100px]" />
+      <div className="relative flex h-16 items-center gap-6 px-6 bg-slate-950/60 backdrop-blur-xl border-b border-white/10">
+        {/* Subtle glow */}
+        <div className="pointer-events-none absolute left-1/4 top-1/2 h-[200px] w-[400px] -translate-x-1/2 -translate-y-1/2 bg-cyan-500/5 blur-[100px]" />
 
         <div className="relative z-10 flex flex-1 items-center gap-6">
           <SessionInput value={sessionTitle} onChange={onTitleChange} />
           <GodModeDropdown value={godModeValue} onChange={onGodModeChange} />
         </div>
 
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-        <div className="pointer-events-none absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent blur-sm" />
+        {/* Bottom edge glow line */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
       </div>
     </header>
   );

@@ -33,6 +33,10 @@ export default defineConfig({
     },
   },
   rules: [
+    // Custom animations for 2D Holtzman scene
+    ['animate-pulse-glow', { animation: 'pulse-glow 4s ease-in-out infinite' }],
+    ['animate-pulse-slow', { animation: 'pulse 6s ease-in-out infinite' }],
+    ['animate-spin-slower', { animation: 'spin 20s linear infinite' }],
     // 安全距离相关的工具类
     ['safe-area-pt', { 'padding-top': 'env(safe-area-inset-top, 0px)' }],
     ['safe-area-pb', { 'padding-bottom': 'env(safe-area-inset-bottom, 0px)' }],

@@ -1,57 +1,103 @@
-const BASE_URL = 'https://auth.sruim.xin';
+/**
+ * Auth Service - Magic Link Authentication
+ * Based on: llmdoc/reference/frontend-integration.md
+ *
+ * Base URL: https://auth.sruim.xin
+ * All requests must include credentials: 'include' for cookie handling
+ */
+
+const AUTH_BASE = 'https://auth.sruim.xin';
 const IS_DEV = import.meta.env.DEV;
 
-interface User {
-  id: string;
+export interface User {
+  id: number;
   email: string;
-  name?: string;
-}
-
-interface AuthResponse {
-  success: boolean;
-  user?: User;
-  error?: string;
+  created_at: string;
 }
 
 // Mock user for development
 const MOCK_USER: User = {
-  id: 'dev-user-001',
+  id: 1,
   email: 'dev@localhost',
-  name: 'Developer',
+  created_at: new Date().toISOString(),
 };
 
-const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+interface LoginParams {
+  email: string;
+  redirect_uri?: string;
+  product?: 'ephemera' | 'maxell' | null;
+}
 
-  if (!res.ok) throw new Error(`Auth request failed: ${res.status}`);
-  return res.json();
-};
+async function request<T>(path: string, options?: RequestInit): Promise<T | null> {
+  try {
+    const res = await fetch(`${AUTH_BASE}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    });
+
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
 
 export const authService = {
-  login: async (email: string, product = 'nexus-boardroom'): Promise<AuthResponse> => {
-    if (IS_DEV) return { success: true, user: { ...MOCK_USER, email } };
-    return request<AuthResponse>('/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, product }),
-    });
+  /**
+   * Request login - sends Magic Link email
+   * POST /auth/login
+   */
+  login: async ({ email, redirect_uri, product }: LoginParams): Promise<boolean> => {
+    if (IS_DEV) {
+      console.log('[DEV] Mock login for:', email);
+      return true;
+    }
+
+    try {
+      const res = await fetch(`${AUTH_BASE}/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          redirect_uri: redirect_uri || window.location.href,
+          product: product || null,
+        }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 
-  getUser: async (): Promise<AuthResponse> => {
-    if (IS_DEV) return { success: true, user: MOCK_USER };
-    return request<AuthResponse>('/me');
+  /**
+   * Get current user
+   * GET /auth/me
+   */
+  getUser: async (): Promise<User | null> => {
+    if (IS_DEV) return MOCK_USER;
+    return request<User>('/auth/me');
   },
 
-  logout: async (): Promise<AuthResponse> => {
-    if (IS_DEV) return { success: true };
-    return request<AuthResponse>('/logout', { method: 'POST' });
+  /**
+   * Logout
+   * POST /auth/logout
+   */
+  logout: async (): Promise<boolean> => {
+    if (IS_DEV) return true;
+
+    try {
+      const res = await fetch(`${AUTH_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 };
-
-export type { AuthResponse, User };
