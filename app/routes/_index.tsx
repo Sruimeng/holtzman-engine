@@ -130,19 +130,18 @@ export default function IndexRoute() {
         onSettingsClick={() => console.log('Settings clicked')}
       />
 
-      {/* Central Energy Orb Background - Quantum Sphere Effect */}
-      <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
-        {/* Outer glow ring */}
-        <div className="absolute h-[700px] w-[700px] rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.15)_0%,rgba(6,182,212,0.1)_40%,transparent_70%)]" />
-        {/* Middle energy layer */}
-        <div className="absolute h-[500px] w-[500px] animate-pulse rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.3)_0%,rgba(34,211,238,0.2)_30%,transparent_60%)] blur-xl" />
-        {/* Inner core */}
-        <div className="absolute h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle,rgba(192,132,252,0.5)_0%,rgba(103,232,249,0.3)_40%,transparent_70%)] blur-lg" />
-        {/* Bright center */}
-        <div className="absolute h-[150px] w-[150px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.4)_0%,rgba(167,139,250,0.3)_50%,transparent_80%)] blur-md" />
+      {/* Background Video */}
+      <div className="fixed inset-0 z-0">
+        <video autoPlay loop muted playsInline className="h-full w-full object-cover opacity-40">
+          <source src="/static/video/core-loop.mp4" type="video/mp4" />
+        </video>
+        {/* Overlay for better text contrast */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+        {/* Grid overlay */}
+        <div className="absolute inset-0 bg-[url('/static/images/grid.webp')] opacity-20" />
       </div>
 
-      <main className="ml-20 min-h-screen px-6 pb-32 pt-16">
+      <main className="ml-64 min-h-screen px-6 pb-32 pt-16">
         {error && (
           <div className="mb-6 border border-red-500/30 rounded-lg bg-red-900/20 p-4 text-red-300 backdrop-blur">
             <span className="text-sm font-mono">Error: {error}</span>

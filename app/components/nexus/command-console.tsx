@@ -28,6 +28,9 @@ const Wave = ({ active }: { active: boolean }) => (
   </div>
 );
 
+export const GLASS =
+  'bg-slate-900/40 backdrop-blur-xl backdrop-saturate-150 border border-white/10 shadow-lg shadow-black/20';
+
 export const CommandConsole = ({
   value,
   onChange,
@@ -41,12 +44,12 @@ export const CommandConsole = ({
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 z-50 max-w-[calc(100vw-32px)] w-[600px] -translate-x-1/2">
+    <div className="fixed bottom-6 left-[calc(50%+8rem)] z-50 max-w-[calc(100vw-300px)] w-[600px] -translate-x-1/2">
       <Wave active={!!isThinking} />
 
       <div
         className={[
-          'glass-base bg-gradient-to-r from-cyan-900/20 to-purple-900/20',
+          GLASS,
           'h-14 flex items-center gap-3 px-4 rounded-xl',
           'transition-shadow duration-200',
           'focus-within:ring-2 focus-within:ring-cyan-500/50',

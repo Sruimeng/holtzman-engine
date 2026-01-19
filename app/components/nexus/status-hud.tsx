@@ -23,11 +23,12 @@ export function StatusHud({ title = 'Nexus Boardroom', sessionId = '#020617' }: 
   return (
     <header
       className={`
-        fixed top-0 right-0 z-40
-        ml-20 left-20 h-12
+        fixed top-4 right-6 z-40
+        left-72 h-14 rounded-2xl
         flex items-center justify-between
-        border-b border-white/5
+        border border-white/10
         px-6 ${GLASS}
+        shadow-lg shadow-black/20
       `}
     >
       {/* Left: Time */}
