@@ -1,185 +1,183 @@
-# Frontend PRD: Nexus Boardroom (Holographic Edition)
+# Product Requirement Document (PRD)
 
-**版本**: 2.0
-**类型**: 实施规范
-**核心目标**: 1:1 还原 Figma 设计稿的“全息玻璃”质感，并对接 Polymath SSE 引擎。
+## Project: Nexus Boardroom (Holographic Agent Interface)
 
-## 1. 视觉架构 (Visual Architecture)
+| 文档信息 | 内容 |
+| --- | --- |
+| **版本号** | v2.1 (Release Candidate) |
+| **状态** | 待评审 (Pending Review) |
+| **撰写人** | Senior PM |
+| **涉及端** | Web Frontend (React), Mobile H5 |
+| **核心目标** | 打造沉浸式多智能体协作界面，通过可视化交互降低用户理解复杂 AI 逻辑的门槛。 |
 
-基于参考图，界面由 **5 个 Z 轴层级** 构成，通过 CSS 制造伪 3D 深度。
+---
 
-* **L0 (Deep Void)**: 背景视频层。播放紫色/青色能量核心循环视频 (`core_loop.mp4`)。混合模式: `Screen`，透明度: `40%`。
-* **L1 (The Grid)**: 全屏深蓝色网格背景 (`bg-grid-slate-900`)，带晕映 (Vignette) 遮罩。
-* **L2 (Glass Panel)**: 侧边栏与顶部 HUD。磨砂玻璃材质。
-* **L3 (Holo-Cards)**: 智能体卡片。高亮边缘，内发光，悬浮态。
-* **L4 (Overlay)**: 扫描线与噪点纹理，统一画面质感。
+## 1. 背景与价值 (Context & Value)
 
-## 2. 组件详细规范 (Component Specs)
+### 1.1 用户痛点 (Pain Points)
 
-### 2.1 侧边栏 (Sidebar) - *Left*
+* **黑盒焦虑**: 传统 Chatbot 单一输出，用户不知道 AI 是如何得出结论的。
+* **信息单调**: 缺乏多视角（正方/反方）辩论，决策支持能力弱。
+* **视觉疲劳**: 现有的 AI 界面多为枯燥的文字流，缺乏科技感和沉浸感。
 
-* **样式**: 磨砂玻璃长条，高度 100vh，宽度 80px。
-* **元素**:
-* **User Avatar**: 顶部。带青色呼吸光环 (`shadow-cyan-500/50`)。
-* **Session List**: 中部。垂直排列的小圆点。
-* *Active*: 青色发光圆点 + 连线效果。
-* *Inactive*: 灰色圆点。
+### 1.2 解决方案 (Solution)
 
+构建 "Nexus Boardroom"，一个**伪 3D 全息会议室**。用户输入指令后，系统动态召唤不同性格的 AI 智能体（Agent）上台，以卡片对决的形式实时生成内容，并展示思考过程的“心跳”波形。
 
-* **Settings**: 底部齿轮图标。
+### 1.3 核心指标 (Success Metrics)
 
+* **交互完成率**: 用户发起 Query 到所有 Agent 输出完毕且无中断的比例 > 95%。
+* **平均会话时长**: 用户在“全息界面”停留时间 > 3分钟/次。
+* **分享率**: 用户截图或点击分享按钮的比例（依赖高颜值 UI）。
 
+---
 
-### 2.2 顶部 HUD (Status Bar) - *Top*
+## 2. 功能范围 (Scope - MoSCoW)
 
-* **样式**: 悬浮胶囊或通栏，极低透明度。
-* **数据**:
-* **Time**: `HH:mm` (实时更新)。
-* **Signal**: `((·)) 15%` (模拟信号强度)。
-* **Hash**: `#020617` (版本号或 Session ID)。
-* **Title**: "Nexus Boardroom" (居中，发光字)。
-
-
-
-### 2.3 核心舞台 (The Stage) - *Center*
-
-* **布局**: 动态 Grid 系统。根据 API `meta` 事件返回的 Agent 数量自动排列。
-* **默认视图 (参考图)**: 双卡片对决模式 (Duel Mode)。
-* 左卡: `PRAGMATIST` (Green Theme)
-* 右卡: `CRITIC` (Red Theme)
+* **Must-Have (P0)**:
+* 全息玻璃拟态 UI (5层 Z轴深度)。
+* 多 Agent SSE 流式并发输出。
+* 动态波形图 (Audio Visualizer)。
+* 移动端响应式适配（降级体验）。
 
 
-
-### 2.4 全息卡片 (Holo-Card) - *Critical*
-
-参考图中卡片的详细构造：
-
-* **Header**:
-* Icon + Agent Name (全大写，等宽字体)。
-* 顶部高亮光条 (颜色对应 Agent 主题)。
+* **Should-Have (P1)**:
+* 打字机光标动效与声效。
+* Agent 卡片的手动展开/收起。
+* Markdown 代码高亮与表格渲染。
 
 
-* **Body**:
-* 背景: 深色半透明 (`bg-slate-900/60`) + `backdrop-blur-xl`.
-* 内容: Markdown 渲染区域。字体 `Inter`，颜色 `Slate-200`。
+* **Could-Have (P2)**:
+* 用户自定义 Agent 主题色。
+* 会话历史记录侧边栏。
 
 
-* **Footer**:
-* 状态: "Thinking..." 或 "Speaking..." (打字机效果时闪烁)。
-* 数据: "Latency data, 0.83ms" (模拟数据)。
-
-
-
-### 2.5 底部控制台 (Command Console) - *Bottom*
-
-* **Visualizer (波形图)**:
-* 位于输入框上方。
-* 参考图显示为 **垂直条状频谱**，颜色为青紫渐变。
-* *Idle*: 低幅波动。 *Thinking*: 高频剧烈波动。
-
-
-* **Input Field**:
-* 玻璃胶囊造型。
-* Placeholder: "Enter tactical query..."
-* 发光边框: 聚焦时显示青色外发光。
+* **Won't-Have (v1.0)**:
+* Agent 之间的语音对话功能。
+* 3D 模型渲染 (仅用 CSS 伪 3D)。
 
 
 
 ---
 
-## 3. 逻辑与数据接入 (Logic & Integration)
+## 3. 详细功能说明 (Functional Specifications)
 
-### 3.1 智能体映射表 (Agent Mapping)
+### 3.1 核心舞台与 Agent 编排 (The Stage)
 
-前端需维护一个配置表，将后端 `agent_id` 映射到 UI 颜色和图标。
+**用户故事**: 作为用户，我发出指令后，希望看到系统自动选择最合适的专家 Agent 来回答，而不是千篇一律的回复。
 
-| Agent ID | Name | Color Theme (Tailwind) | Icon (Lucide) | 参考图对应 |
-| --- | --- | --- | --- | --- |
-| `pragmatist` | PRAGMATIST | `emerald-500` (#10B981) | `Briefcase` | 左侧卡片 |
-| `critic` | CRITIC | `rose-500` (#F43F5E) | `AlertTriangle` | 右侧卡片 |
-| `historian` | HISTORIAN | `amber-500` (#F59E0B) | `ScrollText` | (预设) |
-| `expander` | EXPANDER | `purple-500` (#A855F7) | `Sparkles` | (预设) |
-| `default` | SYSTEM | `cyan-500` (#06B6D4) | `Cpu` | (通用) |
-
-### 3.2 SSE 事件流处理机
-
-对接 `POST /api/v1/engine`。
-
-1. **Phase 1: 初始化 (Request)**
-* 发送 `query`。
-* UI 状态: Input 锁定，Visualizer 变为“高频波动”，中间舞台显示 "Orchestrating Agents..."。
+* **逻辑流程**:
+1. 监听 SSE `meta` 事件，获取 `agent_list`。
+2. 根据 Agent 数量动态调整 Grid 布局（1列、2列或田字格）。
+3. **动效**: 卡片需带有 `Entrance Animation`（弹簧效果从底部弹出）。
 
 
-2. **Phase 2: 编排 (Event: `meta`)**
-* **Payload**: `{"selected_agents": ["pragmatist", "critic"]}`
-* **Action**:
-* 清空当前舞台。
-* 根据列表生成 2 张卡片。
-* 卡片状态设为 `Thinking` (显示骨架屏或 Loading 动画)。
+* **异常处理**:
+* **超时**: 若 10s 内无 meta 事件，显示 Toast "Neural Link Unstable"，并显示重试按钮。
+* **空状态**: 若返回空列表，默认召唤 "System Agent" 兜底。
 
 
 
+### 3.2 全息卡片交互 (Holo-Card Interaction)
 
-3. **Phase 3: 流式输出 (Event: `stream`)**
-* **Payload**: `{"agent": "critic", "delta": "This proposal..."}`
-* **Action**:
-* 找到 ID 为 `critic` 的卡片。
-* 将 `delta` 追加到内容缓存。
-* 触发“打字机”光标跳动。
-* 卡片边框高亮，透明度设为 100% (Focus)。非活跃卡片透明度降为 60%。
+**用户故事**: 在 Agent 生成内容时，我希望能流畅阅读，且清楚知道哪个 Agent 正在“思考”。
 
-
-
-
-4. **Phase 4: 完成 (Event: `stream_end`)**
-* **Action**: 移除打字机光标，显示引用来源或 Token 统计。
-
-
-
----
-
-## 4. 交互动效 (Interaction)
-
-使用 `Framer Motion` 实现。
-
-1. **入场 (Entry)**:
-* Grid 背景淡入。
-* 卡片从屏幕下方 `50px` 处弹入 (Spring 动画)。
+* **状态定义**:
+| 状态 | 视觉表现 | 触发条件 |
+| :--- | :--- | :--- |
+| **Idle** | 透明度 60%，无边框光效 | 初始化或非活跃 |
+| **Thinking** | 骨架屏闪烁，顶部显示 "Analyzing..." | 收到 meta 但未收到 stream |
+| **Streaming** | 透明度 100%，边框高亮，光标跳动 | 正在接收 stream delta |
+| **Error** | 边框变红，卡片变灰 | 收到 stream_error |
+* **智能滚动逻辑 (Smart Scroll)**:
+* 若用户滚动条在底部 -> 随内容生成自动滚动。
+* 若用户手动向上滚动查看历史 -> **暂停自动滚动**，仅显示 "New content ↓" 悬浮提示。
 
 
-2. **视差 (Parallax)**:
-* 鼠标移动时，背景层 (L0, L1) 移动速度极慢，卡片层 (L3) 移动稍快。制造“悬浮”错觉。
+
+### 3.3 底部控制台 (Command Console)
+
+**组件**: 输入框 + 频谱仪 (Visualizer)。
+
+* **输入框逻辑**:
+* Enter 发送，Shift+Enter 换行。
+* 发送后 Input 变为 `Disabled` 状态，Placeholder 变为 "Transmission in progress..."。
+* 增加 "Stop" 按钮（仅在生成时出现），点击后断开 SSE 连接。
 
 
-3. **悬停 (Hover)**:
-* 鼠标悬停在卡片上时，卡片轻微上浮，内发光增强。
+* **频谱仪 (Visualizer)**:
+* **Idle**: 低频正弦波 (模拟呼吸)。
+* **Busy**: 根据生成的 token 速率模拟高频波动 (伪随机高度)。
 
 
 
 ---
 
-## 5. 给 AI 编程助手的 Prompt (Developer Hand-off)
+## 4. 非功能性需求 (Non-Functional Requirements)
 
-> **Role**: Senior Frontend Engineer.
-> **Task**: Implement the "Nexus Boardroom" UI based on the attached screenshot and API specs.
-> **Stack**: React, Tailwind CSS, Framer Motion, Lucide React.
-> **Requirements**:
-> 1. **Layout**: Create the Sidebar (Left), Header (Top), and Stage (Center). Use CSS Grid/Flexbox.
-> 2. **Visuals**: Use `backdrop-filter: blur(xl)` for the glass effect. Match the specific colors: Green for Pragmatist, Red for Critic.
-> 3. **State**: Create a `usePolymathStore` (Zustand) to handle SSE events.
-> * On `meta` event: dynamic render `<HoloCard />` components.
-> * On `stream` event: append text to the specific card ID.
-> 
-> 
-> 4. **Components**:
-> * `HoloCard`: Needs props for `title`, `type` (determines color), `content`, and `status`.
-> * `AudioVisualizer`: A mock animated bars component above the input.
-> 
-> 
-> 5. **Assets**: Use a placeholder `div` with a radial gradient to simulate the background "Energy Core" if video is missing.
-> 
-> 
+### 4.1 性能要求 (Performance)
+
+* **帧率 (FPS)**: 在 MacBook Air (M1) 及以上设备保持 60fps。
+* **降级策略 (Graceful Degradation)**:
+* 检测到 GPU 性能低（通过 `requestAnimationFrame` 采样）或移动端设备时：
+* 关闭 `backdrop-filter: blur`。
+* 移除背景视频层 (L0)，改为静态渐变图。
+* 简化粒子特效。
+
+
+
+
+
+### 4.2 响应式设计 (Responsive)
+
+* **Desktop (>1024px)**: 完整全息体验，双栏布局。
+* **Tablet (768px - 1024px)**: 侧边栏收起为图标栏。
+* **Mobile (<768px)**:
+* **布局变更**: 侧边栏变为底部 Tab。
+* **Stack View**: Agent 卡片改为垂直堆叠，不支持左右并排。
+* **字体**: 正文字号从 14px 调整为 16px (防止 iOS 缩放)。
+
+
 
 ---
 
-**附注**: 所有的颜色 Hex 值已从你的设计稿中提取，请在 Tailwind Config 中通过 `extend.colors` 预设这些变量，以保证还原度。
+## 5. 数据埋点需求 (Analytics)
+
+| 事件 Key | 描述 | 参数 (Params) |
+| --- | --- | --- |
+| `nexus_init` | 页面加载完成 | `device_type`, `performance_mode` |
+| `query_sent` | 用户发送指令 | `query_length` |
+| `agent_triggered` | Agent 被召唤 | `agent_name`, `agent_count` |
+| `stream_complete` | 生成完成 | `duration_ms`, `token_count` |
+| `ui_interaction` | 界面交互 | `action_type` (expand/copy/scroll) |
+
+---
+
+## 6. 验收标准 (Acceptance Criteria - AC)
+
+### AC1: 视觉还原度
+
+* [ ] 背景视频、网格层、玻璃层叠加顺序正确，无穿模。
+* [ ] Critic (红) 和 Pragmatist (绿) 的主题色 Hex 值与设计稿完全一致。
+* [ ] 字体必须使用 `Inter` 或 `JetBrains Mono` (代码)。
+
+### AC2: SSE 稳定性
+
+* [ ] 模拟网络延迟（Slow 3G）时，UI 不应卡死，Loading 状态需持续。
+* [ ] 断网重连后，应当提示用户刷新或自动重试，而不是白屏。
+* [ ] 点击 "Stop" 按钮，数据流立即停止，不再追加文字。
+
+### AC3: 移动端适配
+
+* [ ] 在 iPhone Safari 上，地址栏不应遮挡底部输入框（处理 `100vh` 问题）。
+* [ ] 手机端无明显卡顿，模糊效果已根据设备性能自动关闭。
+
+---
+
+## 7. 附录：技术栈建议 (Tech Stack Recommendation)
+
+* **Framework**: React 18 + Vite
+* **State**: Zustand (轻量级，适合高频 SSE 更新)
+* **Styling**: Tailwind CSS (核心), `clsx` + `tailwind-merge` (动态样式)
+* **Animation**: Framer Motion (处理卡片进出场)
+* **Markdown**: `react-markdown` + `rehype-highlight`
