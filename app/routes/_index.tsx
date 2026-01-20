@@ -190,7 +190,11 @@ export default function IndexRoute() {
         ) : (
           <div className="relative z-10 mx-auto max-w-6xl py-8">
             <div
-              className={isMobile ? 'flex flex-col gap-4' : `grid gap-6 ${getGridClass(gridCount)}`}
+              className={
+                isMobile
+                  ? 'flex flex-col gap-4'
+                  : `grid gap-6 ${getGridClass(gridCount)} max-md:grid-cols-1 max-md:flex max-md:flex-col`
+              }
             >
               {normal.map((agent) => {
                 const cardKey = `${agent.roundId}-${agent.id}`;
