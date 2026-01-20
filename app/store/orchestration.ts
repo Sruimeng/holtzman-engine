@@ -13,6 +13,13 @@ export interface AgentState {
   error?: string;
 }
 
+export interface Round {
+  id: string;
+  query: string;
+  agents: Record<string, AgentState>;
+  createdAt: number;
+}
+
 export interface HistoryMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -20,8 +27,10 @@ export interface HistoryMessage {
 
 interface OrchestrationState {
   status: OrchestrationStatus;
-  agents: Record<string, AgentState>;
+  rounds: Round[];
+  currentRoundId: string | null;
   history: HistoryMessage[];
+  cardCollapsed: Record<string, boolean>;
   error?: string;
 }
 
@@ -29,6 +38,10 @@ interface OrchestrationActions {
   handleSSEEvent: (event: SSEEvent) => void;
   startOrchestration: (query: string) => void;
   addToHistory: (message: HistoryMessage) => void;
+  setHistory: (history: HistoryMessage[]) => void;
+  setRounds: (rounds: Round[]) => void;
+  setCardCollapsed: (agentId: string, collapsed: boolean) => void;
+  setAllCardsCollapsed: (collapsed: boolean) => void;
   clearHistory: () => void;
   reset: () => void;
 }
@@ -37,14 +50,30 @@ type Store = OrchestrationState & OrchestrationActions;
 
 const initial: OrchestrationState = {
   status: 'idle',
-  agents: {},
+  rounds: [],
+  currentRoundId: null,
   history: [],
+  cardCollapsed: {},
 };
 
-// Event handlers - each under 10 lines
+// Helper to get current round
+const getCurrentRound = (state: OrchestrationState): Round | undefined =>
+  state.rounds.find((r) => r.id === state.currentRoundId);
+
+// Helper to update current round's agents
+const updateCurrentRoundAgents = (
+  state: OrchestrationState,
+  updater: (agents: Record<string, AgentState>) => Record<string, AgentState>,
+): Round[] => {
+  return state.rounds.map((r) =>
+    r.id === state.currentRoundId ? { ...r, agents: updater(r.agents) } : r,
+  );
+};
+
+// Event handlers
 const handlers = {
   meta: (
-    _state: OrchestrationState,
+    state: OrchestrationState,
     data: { selected_agents: AgentRole[] },
   ): Partial<OrchestrationState> => {
     const now = Date.now();
@@ -54,33 +83,48 @@ const handlers = {
       agents[role] = { id: role, role, status: 'thinking', content: '', createdAt: now };
     });
 
-    return { status: 'streaming', agents };
+    const rounds = state.rounds.map((r) => (r.id === state.currentRoundId ? { ...r, agents } : r));
+
+    return { status: 'streaming', rounds };
   },
 
   stream: (
     state: OrchestrationState,
     data: { agent: AgentRole; delta: string },
   ): Partial<OrchestrationState> => {
-    const agent = state.agents[data.agent];
+    const round = getCurrentRound(state);
+    const agent = round?.agents[data.agent];
     if (!agent) return {};
 
-    return {
-      agents: {
-        ...state.agents,
-        [data.agent]: { ...agent, status: 'streaming', content: agent.content + data.delta },
-      },
-    };
+    const rounds = updateCurrentRoundAgents(state, (agents) => ({
+      ...agents,
+      [data.agent]: { ...agent, status: 'streaming', content: agent.content + data.delta },
+    }));
+
+    return { rounds };
   },
 
   stream_end: (
     state: OrchestrationState,
     data: { agent: AgentRole },
   ): Partial<OrchestrationState> => {
-    const agent = state.agents[data.agent];
+    const round = getCurrentRound(state);
+    const agent = round?.agents[data.agent];
     if (!agent) return {};
 
+    const rounds = updateCurrentRoundAgents(state, (agents) => ({
+      ...agents,
+      [data.agent]: { ...agent, status: 'done' },
+    }));
+
+    const updatedRound = rounds.find((r) => r.id === state.currentRoundId);
+    const allDone = updatedRound
+      ? Object.values(updatedRound.agents).every((a) => a.status === 'done' || a.status === 'error')
+      : false;
+
     return {
-      agents: { ...state.agents, [data.agent]: { ...agent, status: 'done' } },
+      rounds,
+      status: allDone ? 'finished' : state.status,
     };
   },
 
@@ -92,12 +136,16 @@ const handlers = {
       return { status: 'error', error: data.error };
     }
 
-    const agent = state.agents[data.agent];
+    const round = getCurrentRound(state);
+    const agent = round?.agents[data.agent];
     if (!agent) return { error: data.error };
 
-    return {
-      agents: { ...state.agents, [data.agent]: { ...agent, status: 'error', error: data.error } },
-    };
+    const rounds = updateCurrentRoundAgents(state, (agents) => ({
+      ...agents,
+      [data.agent!]: { ...agent, status: 'error', error: data.error },
+    }));
+
+    return { rounds };
   },
 };
 
@@ -105,12 +153,22 @@ export const useOrchestrationStore = create<Store>((set) => ({
   ...initial,
 
   startOrchestration: (query: string) =>
-    set((state) => ({
-      status: 'orchestrating',
-      agents: {},
-      error: undefined,
-      history: [...state.history, { role: 'user' as const, content: query }],
-    })),
+    set((state) => {
+      const roundId = crypto.randomUUID();
+      const newRound: Round = {
+        id: roundId,
+        query,
+        agents: {},
+        createdAt: Date.now(),
+      };
+      return {
+        status: 'orchestrating',
+        rounds: [...state.rounds, newRound],
+        currentRoundId: roundId,
+        error: undefined,
+        history: [...state.history, { role: 'user' as const, content: query }],
+      };
+    }),
 
   handleSSEEvent: (event) =>
     set((state) => {
@@ -121,17 +179,46 @@ export const useOrchestrationStore = create<Store>((set) => ({
   addToHistory: (message: HistoryMessage) =>
     set((state) => ({ history: [...state.history, message] })),
 
-  clearHistory: () => set({ history: [] }),
+  setHistory: (history: HistoryMessage[]) => set({ history }),
 
-  reset: () => set({ status: 'idle', agents: {}, error: undefined }),
+  setRounds: (rounds: Round[]) => {
+    const collapsedMap: Record<string, boolean> = {};
+    rounds.forEach((r) => {
+      Object.keys(r.agents).forEach((agentId) => {
+        collapsedMap[`${r.id}-${agentId}`] = true;
+      });
+    });
+    set({ rounds, cardCollapsed: collapsedMap, status: rounds.length > 0 ? 'finished' : 'idle' });
+  },
+
+  setCardCollapsed: (agentId: string, collapsed: boolean) =>
+    set((state) => ({ cardCollapsed: { ...state.cardCollapsed, [agentId]: collapsed } })),
+
+  setAllCardsCollapsed: (collapsed: boolean) =>
+    set((state) => {
+      const newCollapsed: Record<string, boolean> = {};
+      Object.keys(state.cardCollapsed).forEach((id) => {
+        newCollapsed[id] = collapsed;
+      });
+      return { cardCollapsed: newCollapsed };
+    }),
+
+  clearHistory: () => set({ history: [], rounds: [], currentRoundId: null, cardCollapsed: {} }),
+
+  reset: () => set({ ...initial }),
 }));
 
-// Collect synthesizer content as assistant response when all agents are done
+// Collect synthesizer content from current round
 export const selectSynthesizerContent = (state: Store): string | null => {
-  const synthesizer = state.agents['synthesizer'];
+  const currentRound = state.rounds.find((r) => r.id === state.currentRoundId);
+  const synthesizer = currentRound?.agents['synthesizer'];
   if (synthesizer?.status === 'done') return synthesizer.content;
   return null;
 };
 
-export const selectActiveAgents = (state: Store) =>
-  Object.values(state.agents).filter((a) => a.status !== 'done');
+// Get all agents from all rounds for display
+export const selectAllAgents = (state: Store): AgentState[] =>
+  state.rounds.flatMap((r) => Object.values(r.agents));
+
+// Get rounds
+export const selectRounds = (state: Store): Round[] => state.rounds;

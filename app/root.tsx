@@ -1,3 +1,5 @@
+import { Dialoger } from '@sruim/nexus-design';
+import '@sruim/nexus-design/style.css';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
@@ -67,6 +69,7 @@ const App: React.FC = () => {
         <Outlet />
         <ScrollRestoration />
         <Scripts />
+        <Dialoger />
       </body>
     </html>
   );

@@ -1,3 +1,4 @@
+import { theme as nexusTheme } from '@sruim/nexus-design/theme';
 import {
   defineConfig,
   presetIcons,
@@ -22,7 +23,11 @@ export default defineConfig({
   ],
   transformers: [transformerDirectives(), transformerVariantGroup(), transformerCompileClass()],
   theme: {
+    ...nexusTheme,
     colors: {
+      ...nexusTheme.colors,
+
+      // Project semantic tokens
       background: 'rgba(var(--color-background) / <alpha-value>)',
       foreground: 'rgba(var(--color-foreground) / <alpha-value>)',
       primary: 'rgba(var(--color-primary) / <alpha-value>)',
@@ -55,7 +60,9 @@ export default defineConfig({
       'agent-synthesizer': '#FFFFFF',
     },
     animation: {
+      ...nexusTheme.animation,
       keyframes: {
+        ...nexusTheme.animation?.keyframes,
         shimmer: '{ 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }',
         'glow-red':
           '{ 0%, 100% { box-shadow: 0 0 5px #ef4444, 0 0 10px #ef444480 } 50% { box-shadow: 0 0 15px #ef4444, 0 0 25px #ef444480 } }',
@@ -110,7 +117,6 @@ export default defineConfig({
     ['animate-glow-teal', { animation: 'glow-teal 2s ease-in-out infinite' }],
     ['animate-wave-slow', { animation: 'wave-slow 0.8s ease-in-out infinite alternate' }],
     ['animate-wave-fast', { animation: 'wave-fast 0.3s ease-in-out infinite alternate' }],
-    // 安全距离相关的工具类
     ['safe-area-pt', { 'padding-top': 'env(safe-area-inset-top, 0px)' }],
     ['safe-area-pb', { 'padding-bottom': 'env(safe-area-inset-bottom, 0px)' }],
     [

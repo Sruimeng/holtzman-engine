@@ -8,10 +8,13 @@ interface UseFetchSSEOptions {
   onMessage: (event: SSEEvent) => void;
   onError?: (error: Error) => void;
   enabled?: boolean;
+  timeout?: number;
 }
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000;
+const META_TIMEOUT = 10_000;
+const STREAM_TIMEOUT = 30_000;
 
 export const useFetchSSE = ({
   url,
@@ -19,16 +22,32 @@ export const useFetchSSE = ({
   onMessage,
   onError,
   enabled = true,
+  timeout = META_TIMEOUT,
 }: UseFetchSSEOptions) => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const retryCountRef = useRef(0);
   const retryTimeoutRef = useRef<number | undefined>(undefined);
+  const timeoutIdRef = useRef<number | undefined>(undefined);
+  const streamTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!enabled) return;
 
+    const resetStreamTimeout = () => {
+      if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
+      streamTimeoutRef.current = window.setTimeout(() => {
+        abortControllerRef.current?.abort();
+        onError?.(new Error('STREAM_TIMEOUT'));
+      }, STREAM_TIMEOUT);
+    };
+
     const connect = async () => {
       abortControllerRef.current = new AbortController();
+
+      timeoutIdRef.current = window.setTimeout(() => {
+        abortControllerRef.current?.abort();
+        onError?.(new Error('META_TIMEOUT'));
+      }, timeout);
 
       try {
         const response = await fetch(url, {
@@ -38,9 +57,13 @@ export const useFetchSSE = ({
           signal: abortControllerRef.current.signal,
         });
 
+        clearTimeout(timeoutIdRef.current);
+
         if (!response.ok || !response.body) {
           throw new Error(`HTTP ${response.status}`);
         }
+
+        resetStreamTimeout();
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -50,6 +73,8 @@ export const useFetchSSE = ({
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+
+          resetStreamTimeout();
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
@@ -83,7 +108,12 @@ export const useFetchSSE = ({
             }
           }
         }
+
+        if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
       } catch (err) {
+        clearTimeout(timeoutIdRef.current);
+        if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
+
         if (err instanceof Error && err.name !== 'AbortError') {
           onError?.(err);
 
@@ -100,9 +130,9 @@ export const useFetchSSE = ({
 
     return () => {
       abortControllerRef.current?.abort();
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-      }
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
     };
-  }, [url, body, enabled, onMessage, onError]);
+  }, [url, body, enabled, timeout, onMessage, onError]);
 };

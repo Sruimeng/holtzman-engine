@@ -1,6 +1,6 @@
 'use client';
 
-import { Icon } from '@iconify/react';
+import { cn, Icon } from '@sruim/nexus-design';
 import { useEffect, useState } from 'react';
 
 interface StatusHudProps {
@@ -22,18 +22,18 @@ export function StatusHud({ title = 'Nexus Boardroom', sessionId = '#020617' }: 
 
   return (
     <header
-      className={`
-        fixed top-4 right-6 z-40
-        left-72 h-14 rounded-2xl
-        flex items-center justify-between
-        border border-white/10
-        px-6 ${GLASS}
-        shadow-lg shadow-black/20
-      `}
+      className={cn(
+        'fixed top-4 right-6 z-40',
+        'left-72 h-14 rounded-2xl',
+        'flex items-center justify-between',
+        'border border-white/10',
+        'px-6 shadow-lg shadow-black/20',
+        GLASS,
+      )}
     >
       {/* Left: Time */}
       <div className="flex items-center gap-2 text-text-secondary">
-        <Icon icon="mdi:clock-outline" className="text-lg" />
+        <Icon icon="i-carbon-time" className="text-lg" />
         <span className="text-sm font-mono">{clock}</span>
       </div>
 
@@ -45,12 +45,12 @@ export function StatusHud({ title = 'Nexus Boardroom', sessionId = '#020617' }: 
       {/* Right: Signal + Session */}
       <div className="flex items-center gap-6 text-sm text-text-secondary">
         <div className="flex items-center gap-2">
-          <Icon icon="mdi:signal-cellular-2" className="text-lg text-cyan-400/70" />
+          <Icon icon="i-carbon-wifi" className="text-lg text-cyan-400/70" />
           <span className="font-mono">15%</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <Icon icon="mdi:pound" className="text-lg" />
+          <Icon icon="i-carbon-hashtag" className="text-lg" />
           <span className="font-mono">{sessionId.replace('#', '')}</span>
         </div>
       </div>
