@@ -149,14 +149,6 @@ export const HoloCard = ({
     const id = setInterval(() => setShowCursor((p) => !p), 500);
     return () => clearInterval(id);
   }, []);
-
-  // Auto-expand when streaming starts
-  useEffect(() => {
-    if (isStreaming) {
-      queueMicrotask(() => onCollapsedChange?.(false));
-    }
-  }, [isStreaming, onCollapsedChange]);
-
   useEffect(() => {
     if (!isStreaming || userScrolledRef.current) return;
     contentRef.current?.scrollTo({ top: contentRef.current.scrollHeight, behavior: 'smooth' });

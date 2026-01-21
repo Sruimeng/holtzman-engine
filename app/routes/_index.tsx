@@ -117,7 +117,14 @@ export default function IndexRoute() {
     if (!currentSessionId) {
       setCurrentSessionId(generateSessionId());
     }
-    startOrchestration(query);
+
+    // Pass pending AI response to startOrchestration for atomic update
+    const pendingContent =
+      synthesizerContent && history[history.length - 1]?.role !== 'assistant'
+        ? synthesizerContent
+        : undefined;
+
+    startOrchestration(query, pendingContent);
     setActiveQuery(query);
     setQuery('');
   };

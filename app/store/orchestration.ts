@@ -36,7 +36,7 @@ interface OrchestrationState {
 
 interface OrchestrationActions {
   handleSSEEvent: (event: SSEEvent) => void;
-  startOrchestration: (query: string) => void;
+  startOrchestration: (query: string, pendingAssistantContent?: string) => void;
   addToHistory: (message: HistoryMessage) => void;
   setHistory: (history: HistoryMessage[]) => void;
   setRounds: (rounds: Round[]) => void;
@@ -152,7 +152,7 @@ const handlers = {
 export const useOrchestrationStore = create<Store>((set) => ({
   ...initial,
 
-  startOrchestration: (query: string) =>
+  startOrchestration: (query: string, pendingAssistantContent?: string) =>
     set((state) => {
       const roundId = crypto.randomUUID();
       const newRound: Round = {
@@ -161,12 +161,26 @@ export const useOrchestrationStore = create<Store>((set) => ({
         agents: {},
         createdAt: Date.now(),
       };
+
+      // Build history: optionally prepend pending AI response
+      let updatedHistory = state.history;
+      if (
+        pendingAssistantContent &&
+        state.history[state.history.length - 1]?.role !== 'assistant'
+      ) {
+        updatedHistory = [
+          ...updatedHistory,
+          { role: 'assistant' as const, content: pendingAssistantContent },
+        ];
+      }
+      updatedHistory = [...updatedHistory, { role: 'user' as const, content: query }];
+
       return {
         status: 'orchestrating',
         rounds: [...state.rounds, newRound],
         currentRoundId: roundId,
         error: undefined,
-        history: [...state.history, { role: 'user' as const, content: query }],
+        history: updatedHistory,
       };
     }),
 
@@ -208,11 +222,23 @@ export const useOrchestrationStore = create<Store>((set) => ({
   reset: () => set({ ...initial }),
 }));
 
-// Collect synthesizer content from current round
+// Get final response content from the most recent finished round
+// Priority: synthesizer > last done agent
 export const selectSynthesizerContent = (state: Store): string | null => {
-  const currentRound = state.rounds.find((r) => r.id === state.currentRoundId);
-  const synthesizer = currentRound?.agents['synthesizer'];
-  if (synthesizer?.status === 'done') return synthesizer.content;
+  for (let i = state.rounds.length - 1; i >= 0; i--) {
+    const round = state.rounds[i];
+    const agents = Object.values(round.agents);
+    const doneAgents = agents.filter((a) => a.status === 'done' && a.content);
+
+    if (doneAgents.length === 0) continue;
+
+    // Prefer synthesizer if available
+    const synthesizer = doneAgents.find((a) => a.role === 'synthesizer');
+    if (synthesizer) return synthesizer.content;
+
+    // Otherwise return the last done agent's content
+    return doneAgents[doneAgents.length - 1].content;
+  }
   return null;
 };
 

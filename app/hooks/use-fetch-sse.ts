@@ -29,15 +29,24 @@ export const useFetchSSE = ({
   const retryTimeoutRef = useRef<number | undefined>(undefined);
   const timeoutIdRef = useRef<number | undefined>(undefined);
   const streamTimeoutRef = useRef<number | undefined>(undefined);
+  const onMessageRef = useRef(onMessage);
+  const onErrorRef = useRef(onError);
+
+  // Keep refs updated
+  onMessageRef.current = onMessage;
+  onErrorRef.current = onError;
+
+  // Serialize body for stable dependency
+  const bodyJson = body ? JSON.stringify(body) : null;
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !bodyJson) return;
 
     const resetStreamTimeout = () => {
       if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
       streamTimeoutRef.current = window.setTimeout(() => {
         abortControllerRef.current?.abort();
-        onError?.(new Error('STREAM_TIMEOUT'));
+        onErrorRef.current?.(new Error('STREAM_TIMEOUT'));
       }, STREAM_TIMEOUT);
     };
 
@@ -46,14 +55,14 @@ export const useFetchSSE = ({
 
       timeoutIdRef.current = window.setTimeout(() => {
         abortControllerRef.current?.abort();
-        onError?.(new Error('META_TIMEOUT'));
+        onErrorRef.current?.(new Error('META_TIMEOUT'));
       }, timeout);
 
       try {
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: bodyJson,
           signal: abortControllerRef.current.signal,
         });
 
@@ -99,7 +108,7 @@ export const useFetchSSE = ({
               try {
                 const event = parseSSEEvent(currentEvent, raw);
                 if (event) {
-                  onMessage(event);
+                  onMessageRef.current(event);
                   retryCountRef.current = 0;
                 }
               } catch {
@@ -115,7 +124,7 @@ export const useFetchSSE = ({
         if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
 
         if (err instanceof Error && err.name !== 'AbortError') {
-          onError?.(err);
+          onErrorRef.current?.(err);
 
           if (retryCountRef.current < MAX_RETRIES) {
             const delay = INITIAL_DELAY * Math.pow(2, retryCountRef.current);
@@ -134,5 +143,5 @@ export const useFetchSSE = ({
       if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
       if (streamTimeoutRef.current) clearTimeout(streamTimeoutRef.current);
     };
-  }, [url, body, enabled, timeout, onMessage, onError]);
+  }, [url, bodyJson, enabled, timeout]);
 };
